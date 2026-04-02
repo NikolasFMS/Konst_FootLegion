@@ -484,8 +484,8 @@ HIGH DETAIL
             for (let i = 0; i < found.length; i++) {
                 const start = found[i].pos;
                 const end = (i + 1 < found.length) ? found[i + 1].pos : body.length;
-                const label = found[i].kw.replace(':', '').trim();
-                const content = body.substring(start + found[i].kw.length, end).trim();
+                const label = found[i].kw.replace(/:/g, '').trim();
+                const content = body.substring(start + found[i].kw.length, end).trim().replace(/^[:\s]+/, '');
 
                 if (content || label) {
                     sections.push({ label, content });
