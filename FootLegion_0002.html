@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FootLegion Prompt Combiner</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #161616;
+            --bg-sidebar: #111111;
+            --accent: #00c853;
+            /* Яркий бразильский зелёный */
+            --accent-dark: #00a33f;
+            --gold: #ffd700;
+            /* Золотой */
+            --gold-dark: #e6c200;
+            --text: #f0f0f0;
+            --text-secondary: #bbbbbb;
+            --border: #222222;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ==================== SIDEBAR ==================== */
+        .sidebar {
+            width: 340px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .sidebar-header h1 {
+            margin: 0 0 16px 0;
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-folder {
+            width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-folder:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
+        }
+
+        /* Character Groups */
+        .character-group {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .character-name {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.02rem;
+            transition: all 0.2s;
+        }
+
+        .character-name:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .character-name .role {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--gold);
+            opacity: 0.9;
+        }
+
+        .scenarios {
+            display: none;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .character-group.open .scenarios {
+            display: block;
+        }
+
+        .scenario-item {
+            padding: 10px 20px 10px 48px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 0.92rem;
+            transition: all 0.2s;
+        }
+
+        .scenario-item:hover {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--accent);
+        }
+
+        .scenario-item input {
+            margin-right: 12px;
+            accent-color: var(--accent);
+            transform: scale(1.1);
+        }
+
+        /* ==================== MAIN AREA ==================== */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-bar {
+            padding: 16px 28px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-container {
+            flex: 1;
+            padding: 28px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 24px;
+        }
+
+        /* Result Card */
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0, 200, 83, 0.15);
+        }
+
+        .result-card h3 {
+            margin: 0 0 14px 0;
+            color: var(--gold);
+            font-size: 1.05rem;
+        }
+
+        .chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .chip {
+            font-size: 0.78rem;
+            padding: 5px 12px;
+            background: #1f1f1f;
+            border: 1px solid #333;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .chip:hover {
+            border-color: var(--accent);
+            background: rgba(0, 200, 83, 0.1);
+        }
+
+        .chip.disabled {
+            opacity: 0.45;
+            text-decoration: line-through;
+            border-color: #333;
+            background: #0f0f0f;
+        }
+
+        .result-card p {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 7;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #00e85e;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: rgba(0, 200, 83, 0.1);
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), #e6c200);
+            color: #111;
+            font-weight: 700;
+        }
+
+        /* Base Prompt */
+        .base-prompt-section {
+            padding: 20px;
+            background: #0a0a0a;
+            border-top: 1px solid var(--border);
+        }
+
+        .base-prompt-section label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        #base-prompt-textarea {
+            width: 100%;
+            height: 260px;
+            background: #000;
+            color: #d0d0d0;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 14px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.82rem;
+            line-height: 1.45;
+            resize: vertical;
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, var(--accent), #00e85e);
+            color: white;
+            padding: 14px 26px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(0, 200, 83, 0.4);
+            display: none;
+            z-index: 10000;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+            font-size: 1.05rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>ГЕНЕРАТОР ПЕРСОНАЖЕЙ</h1>
+            <button class="btn btn-gold btn-block" onclick="document.getElementById('folder-input').click()">
+                📁 Выбрать папку с персонажами
+            </button>
+            <input type="file" id="folder-input" webkitdirectory directory multiple style="display: none;"
+                onchange="handleFolderSelect(event)">
+        </div>
+
+        <div id="character-list">
+            <div class="empty-state" style="padding: 20px; font-size: 0.8rem;">
+                Загрузите персонажей из папки
+            </div>
+        </div>
+
+        <div class="base-prompt-section">
+            <label>Базовый промт:</label>
+            <div style="margin-bottom: 10px; display: flex; gap: 15px; font-size: 0.75rem;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="base-pos" value="top" style="margin-right: 5px;"> Сверху
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="base-pos" value="bottom" checked style="margin-right: 5px;"> Снизу
+                </label>
+            </div>
+            <textarea id="base-prompt-textarea" placeholder="Вставьте технические теги здесь..."></textarea>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="top-bar">
+            <div>
+                Выбрано сценариев: <span id="selected-count"
+                    style="color: var(--accent-gold); font-weight: bold;">0</span>
+            </div>
+            <div class="card-actions">
+                <button class="btn btn-outline" onclick="clearSelection()">Сбросить</button>
+                <button class="btn btn-gold" id="copy-all-btn" disabled onclick="copyAll()">Копировать все</button>
+            </div>
+        </div>
+        <div class="results-container" id="results">
+            <div class="empty-state">
+                Выберите сценарии в левой панели для формирования очереди копирования
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Скопировано в буфер!</div>
+
+    <script>
+        // --- STATE ---
+        let characters = [];
+        let selectedScenarios = new Map(); // key -> Set of disabled section labels
+        const basePromptEl = document.getElementById('base-prompt-textarea');
+
+        // Default base prompt
+        const defaultBase = `Natural skin without retouching, realistic skin texture, pronounced skin micro-texture, visible pores of varying sizes (visible pores, slightly enlarged pores), subtle uneven skin tone (uneven skin tone, subtle blotchiness), fine vellus hair (peach fuzz), natural oiliness (specular highlights on the nose and cheeks), natural lip texture (natural lips texture), no makeup or minimal makeup (no makeup / minimal makeup), the feeling of living human skin (natural human skin realism), high detail (no skin smoothing), soft natural daylight (diffuse light), soft side lighting (soft side lighting), raw, unretouched, documentary-style beauty photography, ultra-realistic, no plastic or porcelain skin "negative_prompt": [ "standing" pose", "bright sunlight" "summer" "jeans" "sneakers" "makeup distortion", "extra fingers" "bad anatomy", "cartoonish", "illustration", "warm lighting" "mirror selfie" "phone in hand", "dry ground" "over-smoothed skin", "3d render" ] Improve picture quality at 8k. Eyes • Fine, visible veins • Clear iris with a natural color gradient • Eyelashes with a natural curl • Eyebrows with a natural shape and density • Natural shadowing around the eyes Mouth • Visible lip lines and creases • Slight color variation across the lips • Soft transitions at the lip edges • Natural asymmetry • Realistic shadowing around the mouth Hair • Natural hairline visible hairs •Individual hairs • Slight flaking • Visible pores • Subtle light reflections Nose •Fine hair • Evenly distributed • Slightly reflective • Typical "peach fuzz" appearance • Realistic shadowing • Visible pores on and around the nose • Light shine on the tip Hands • Even but natural skin tone (no plastic smoothing) • Soft transitions in light across knuckles and joints • Soft shadowing between fingers • Clean, well-shaped joints • Cuticles visible and realistic SMARTPHONE STYLE PHOTOGRAPHY CLEAN REALISTIC LIFESTYLE SHOTS HIGH DETAIL
+
+Micro-detail priorities
+
+Eyes: fine visible veins, clear iris with natural gradient, naturally curled eyelashes, natural eyebrow density/shape, subtle natural shadows around eyes
+
+Mouth: visible lip lines/creases, slight natural color variation, soft lip-edge transitions, natural asymmetry, realistic shadows around mouth
+
+Hair: natural hairline with baby hairs, individual strands, subtle flaking, visible pores near hairline, gentle light reflections
+
+Nose: fine peach-fuzz hairs, evenly distributed, slightly reflective, realistic shadows, visible pores around nose, slight shine on the tip
+
+Hands: natural skin tone (no plastic smoothing), soft light transitions across knuckles/joints, soft shadows between fingers, realistic joints, visible cuticles
+
+Style tags
+SMARTPHONE STYLE PHOTOGRAPHY
+CLEAN REALISTIC LIFESTYLE SHOTS
+HIGH DETAIL
+
+"negative_prompt": [
+  "standing pose",
+  "bright sunlight",
+  "summer",
+  "jeans",
+  "sneakers",
+  "makeup distortion",
+  "extra fingers",
+  "bad anatomy",
+  "cartoonish",
+  "illustration",
+  "warm lighting",
+  "mirror selfie",
+  "phone in hand",
+  "dry ground",
+  "over-smoothed skin",
+  "3d render"
+]`;
+        basePromptEl.value = defaultBase;
+
+        // --- FOLDER PARSING ---
+        async function handleFolderSelect(event) {
+            const files = Array.from(event.target.files).filter(f => f.name.endsWith('.txt'));
+            if (files.length === 0) return;
+
+            characters = [];
+            selectedScenarios.clear();
+
+            for (const file of files) {
+                const text = await file.text();
+                const charData = parseFile(text, file.name);
+                if (charData) characters.push(charData);
+            }
+
+            renderSidebar();
+            updateUI();
+        }
+
+        function parseFile(text, fileName) {
+            const headerMatch = text.match(/FOOTLEGION\s*\|\s*БРАЗИЛИЯ\s*.*?\|\s*(.*?)\s*[—|-]\s*(.*)/i);
+            const name = headerMatch ? headerMatch[1].trim() : fileName.replace('.txt', '');
+            const role = headerMatch ? headerMatch[2].split('\n')[0].trim() : '';
+
+            const scenarios = [];
+            const parts = text.split(/===\s*ВАРИАНТ\s*\d+:\s*(.*?)\s*===/g);
+
+            for (let i = 1; i < parts.length; i += 2) {
+                const title = parts[i].trim();
+                let body = parts[i + 1] || '';
+                body = body.split('################')[0].split('ЧАСТЬ')[0].trim();
+
+                if (body) {
+                    scenarios.push({
+                        id: `${name}_${i}`,
+                        title: title,
+                        sections: parseSections(body)
+                    });
+                }
+            }
+
+            return scenarios.length > 0 ? { name, role, scenarios } : null;
+        }
+
+        function parseSections(body) {
+            // Регулярное выражение ищет слова ЗАГЛАВНЫМИ БУКВАМИ в начале строки, заканчивающиеся двоеточием
+            // Поддерживает кириллицу, латиницу и пробелы в названиях
+            const regex = /(?:^|\n)([A-ZА-ЯЁ\s]+:)/g;
+            const found = [];
+            let match;
+
+            while ((match = regex.exec(body)) !== null) {
+                found.push({
+                    kw: match[1].trim(),
+                    pos: match.index + (match[0].startsWith('\n') ? 1 : 0)
+                });
+            }
+
+            // Если заголовков не найдено, считаем весь текст одним блоком
+            if (found.length === 0) return [{ label: "ТЕКСТ", content: body }];
+
+            const sections = [];
+            for (let i = 0; i < found.length; i++) {
+                const start = found[i].pos;
+                const end = (i + 1 < found.length) ? found[i + 1].pos : body.length;
+                const label = found[i].kw.replace(':', '').trim();
+                const content = body.substring(start + found[i].kw.length, end).trim();
+
+                if (content || label) {
+                    sections.push({ label, content });
+                }
+            }
+
+            return sections;
+        }
+
+        // --- UI RENDERING ---
+        function renderSidebar() {
+            const listEl = document.getElementById('character-list');
+            listEl.innerHTML = '';
+
+            characters.forEach((char, charIdx) => {
+                const group = document.createElement('div');
+                group.className = 'character-group';
+                group.innerHTML = `
+                <div class="character-name" onclick="this.parentElement.classList.toggle('open')">
+                    <div>${char.name} <span class="role">${char.role}</span></div>
+                    <span>▼</span>
+                </div>
+                <div class="scenarios">
+                    ${char.scenarios.map((s, sIdx) => `
+                        <div class="scenario-item" onclick="toggleScenario('${charIdx}_${sIdx}', event)">
+                            <input type="checkbox" id="chk_${charIdx}_${sIdx}" ${selectedScenarios.has(`${charIdx}_${sIdx}`) ? 'checked' : ''}>
+                            <label>${s.title}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+                listEl.appendChild(group);
+            });
+        }
+
+        function toggleScenario(key, event) {
+            if (event.target.tagName !== 'INPUT') {
+                const chk = document.getElementById('chk_' + key);
+                chk.checked = !chk.checked;
+            }
+
+            const chk = document.getElementById('chk_' + key);
+            if (chk.checked) {
+                selectedScenarios.set(key, new Set());
+            } else {
+                selectedScenarios.delete(key);
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            const resultsEl = document.getElementById('results');
+            const countEl = document.getElementById('selected-count');
+            const copyAllBtn = document.getElementById('copy-all-btn');
+
+            resultsEl.innerHTML = '';
+            countEl.innerText = selectedScenarios.size;
+            copyAllBtn.disabled = selectedScenarios.size === 0;
+
+            if (selectedScenarios.size === 0) {
+                resultsEl.innerHTML = '<div class="empty-state">Выберите сценарии в левой панели</div>';
+                return;
+            }
+
+            selectedScenarios.forEach((disabledSet, key) => {
+                const [cIdx, sIdx] = key.split('_').map(Number);
+                const char = characters[cIdx];
+                const scene = char.scenarios[sIdx];
+
+                const card = document.createElement('div');
+                card.className = 'result-card';
+
+                const chipsHtml = scene.sections.map(sec => `
+                <span class="chip ${disabledSet.has(sec.label) ? 'disabled' : ''}" 
+                      onclick="toggleSection('${key}', '${sec.label}')">
+                    ${sec.label}
+                </span>
+            `).join('');
+
+                card.innerHTML = `
+                <div>
+                    <h3>${char.name}: ${scene.title}</h3>
+                    <div class="chips-container">${chipsHtml}</div>
+                    <p>${scene.sections.filter(s => !disabledSet.has(s.label)).map(s => `<b>${s.label}:</b> ${s.content}`).join('<br>')}</p>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-primary" onclick="copySingle('${key}')">Копировать</button>
+                    <button class="btn btn-outline" onclick="removeSelected('${key}')">Удалить</button>
+                </div>
+            `;
+                resultsEl.appendChild(card);
+            });
+        }
+
+        function toggleSection(key, label) {
+            const disabledSet = selectedScenarios.get(key);
+            if (disabledSet.has(label)) {
+                disabledSet.delete(label);
+            } else {
+                disabledSet.add(label);
+            }
+            updateUI();
+        }
+
+        function removeSelected(key) {
+            selectedScenarios.delete(key);
+            const chk = document.getElementById('chk_' + key);
+            if (chk) chk.checked = false;
+            updateUI();
+        }
+
+        function getFullPrompt(key) {
+            const [cIdx, sIdx] = key.split('_').map(Number);
+            const scene = characters[cIdx].scenarios[sIdx];
+            const disabledSet = selectedScenarios.get(key);
+
+            const pos = document.querySelector('input[name="base-pos"]:checked').value;
+            const body = scene.sections
+                .filter(s => !disabledSet.has(s.label))
+                .map(s => `${s.label}: ${s.content}`)
+                .join('\n\n');
+
+            const technical = basePromptEl.value;
+
+            return pos === 'top'
+                ? technical + "\n\n" + body
+                : body + "\n\n" + technical;
+        }
+
+        function copySingle(key) {
+            const text = getFullPrompt(key);
+            navigator.clipboard.writeText(text).then(showToast);
+        }
+
+        function copyAll() {
+            const allPrompts = Array.from(selectedScenarios.keys())
+                .map(key => getFullPrompt(key))
+                .join("\n\n" + "=".repeat(30) + "\n\n");
+            navigator.clipboard.writeText(allPrompts).then(showToast);
+        }
+
+        function clearSelection() {
+            selectedScenarios.clear();
+            document.querySelectorAll('.scenario-item input').forEach(c => c.checked = false);
+            updateUI();
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+    </script>
+
+</body>
+
+</html>
